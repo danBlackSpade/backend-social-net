@@ -1,0 +1,17 @@
+
+# dependencies
+node_modules/
+
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
