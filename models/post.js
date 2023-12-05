@@ -9,7 +9,7 @@ const postSchema = new mongoose.Schema({
         minLength: 3,
         maxLength: 72
     },
-    body: {
+    content: {
         type: String,
         required: true,
         minLength: 5,

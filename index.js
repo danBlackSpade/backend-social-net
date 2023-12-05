@@ -6,6 +6,7 @@ const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mo
 
 const Product = require('./models/product');
 const User = require('./models/user');
+const Post = require('./models/post');
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 // const client = new MongoClient(uri, {
@@ -63,6 +64,47 @@ app.post('/users', async (req, res) => {
 });
 
 
+
+
+// Posts
+app.get('/posts', async (req, res) => {
+    await Post.find()
+        .then((posts) => {
+            return res.status(200).send({ posts });
+        })
+        .catch((err) => {
+            return res.status(500).send({ message: err.message });
+        });
+});
+
+app.get('/posts/:id', async (req, res) => {
+    await Post.findById(req.params.id)
+        .then((post) => {
+            if (post) {
+                return res.status(200).send({ post });
+            } else {
+                return res.status(404).send({ message: 'Post not found' });
+            }
+        })
+        .catch((err) => {
+            return res.status(500).send({ message: err.message });
+        });
+});
+
+app.post('/posts', async (req, res) => {
+    const post = new Post(req.body);
+    console.log('creation started...');
+
+    await post.save()
+        .then((newPost) => {
+            console.log(newPost)
+            return res.status(201).send({ message: 'New post created', newPost });
+        })
+        .catch((err) => {
+            console.log(err);
+            return res.status(500).send({ message: err.message });
+        });
+});
 
 
 // testes
