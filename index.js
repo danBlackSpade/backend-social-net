@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mongodb.net/?retryWrites=true&w=majority";
 
+
 const Product = require('./models/product');
 const User = require('./models/user');
 const Post = require('./models/post');
@@ -33,6 +34,13 @@ const Post = require('./models/post');
 const app = express();
 const port = 3000;
 
+// app.use(cors());
+// app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json());
+app.use(express.json());
+// app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json());
+
 // Connect to MongoDB
 mongoose.connect(uri);
 
@@ -43,7 +51,7 @@ db.once('open', function() {
 });
 
 
-app.use(express.json());
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
@@ -51,18 +59,66 @@ app.get('/', (req, res) => {
 
 
 // User
+
+// Register User
 app.post('/users', async (req, res) => {
     const user = new User(req.body);
-    console.log(req);
-    await user.save()
-        .then((newUser) => {
-            return res.status(201).send({ message: 'New user created', newUser });
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
+    console.log(req.body.email);
+    let doesEmailExist = await User.findOne({ email: req.body.email });
+    let doesUsernameExist = await User.findOne({ username: req.body.username });
+    // res.send('Hello World!');
+    if (doesEmailExist) {
+        console.log('email already exists');
+        // return res.status(400).json({ message: 'Email already exists'});
+        return res.status(400).send({ message: 'Email já cadastrado' });
+    } else if (doesUsernameExist) {
+        console.log('username already exists');
+        return res.status(400).send({ message: 'Usuário já cadastrado' });
+    } else {
+        await user.save()
+            .then((newUser) => {
+                console.log(newUser);
+                return res.status(201).send({ 
+                    message: 'Usuário criado com sucesso!', 
+                    // newUser
+                    email: newUser.email,
+                    _id: newUser._id,
+                    username: newUser.username,
+                    name: newUser.name,
+                    
+                });
+            })
+            .catch((err) => {
+                console.log(err);
+                return res.status(500).send({ message: err.message });
+            });
+    }
 });
 
+// Login User
+app.post('/users/login', async (req, res) => {
+    let response = await User.findOne({
+            email: req.body.email,
+            password: req.body.password
+        });
+    if (await response) {
+        return res.status(200).send({ 
+            message: 'Login successful', 
+            email: response.email, 
+            _id: response._id,
+            username: response.username
+        });
+    } else {
+        console.log(response);
+        console.log(req.body.email)
+        return res.status(400).send({ message: 'Login failed' });
+    }
+});
+
+// Logout User
+app.post('/users/logout', async (req, res) => {
+    
+});
 
 
 
@@ -89,6 +145,58 @@ app.get('/posts/:id', async (req, res) => {
         .catch((err) => {
             return res.status(500).send({ message: err.message });
         });
+});
+
+app.patch('/posts/:id', async (req, res) => {
+    await Post.findById(req.params.id)
+        .then((post) => {
+            if (post) {
+                post.title = req.body.title;
+                post.content = req.body.content;
+                post.isPublic = req.body.isPublic;
+                post.likes = req.body.likes;
+                post.dislikes = req.body.dislikes;
+                post.usersLikes = req.body.usersLikes;
+                post.updatedAt = Date.now();
+
+                post.save()
+                    .then((updatedPost) => {
+                        return res.status(200).send({ message: 'Post updated', updatedPost });
+                    })
+                    .catch((err) => {
+                        return res.status(500).send({ message: err.message });
+                    });
+            } else {
+                return res.status(404).send({ message: 'Post not found' });
+            }
+        })
+});
+
+app.patch('/posts/:id/like', async (req, res) => {
+    await Post.findById(req.params.id)
+        .then((post) => {
+            if (post) {
+                // post.likes = req.body.likes;
+            //     post.usersLikes = req.body.usersLikes;
+            //     post.updatedAt = Date.now();
+            //     post.save()
+            //         .then((updatedPost) => {
+            //             return res.status(200).send({ message: 'Post updated', updatedPost });
+            //         })
+            //         .catch((err) => {
+            //             return res.status(500).send({ message: err.message });
+            //         });
+
+            post.updateOne({ 
+                $inc: { likes: 1 },
+                $push: { usersLikes: req.body.usersLikes }, 
+                updatedAt: Date.now()
+            })
+            } else {
+                return res.status(404).send({ message: 'Post not found' });
+            }
+            
+        })
 });
 
 app.post('/posts', async (req, res) => {
