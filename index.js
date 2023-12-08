@@ -8,6 +8,7 @@ const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mo
 const Product = require('./models/product');
 const User = require('./models/user');
 const Post = require('./models/post');
+const Friend = require('./models/friend');
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 // const client = new MongoClient(uri, {
@@ -85,7 +86,7 @@ app.post('/users', async (req, res) => {
                     _id: newUser._id,
                     username: newUser.username,
                     name: newUser.name,
-                    
+
                 });
             })
             .catch((err) => {
@@ -101,6 +102,7 @@ app.post('/users/login', async (req, res) => {
             email: req.body.email,
             password: req.body.password
         });
+        console.log(response);
     if (await response) {
         return res.status(200).send({ 
             message: 'Login successful', 
@@ -110,7 +112,6 @@ app.post('/users/login', async (req, res) => {
         });
     } else {
         console.log(response);
-        console.log(req.body.email)
         return res.status(400).send({ message: 'Login failed' });
     }
 });
@@ -120,6 +121,26 @@ app.post('/users/logout', async (req, res) => {
     
 });
 
+// Friends
+// Add Friend
+app.post('/users/:id/friends', async (req, res) => {
+    const friend = new Friend({
+        requester: req.params.id,
+        recipient: req.body.recipient,
+        status: 'requested'
+    });
+
+
+    await friend.save()
+        .then((newFriend) => {
+            console.log(newFriend)
+            return res.status(201).send({ message: 'New friend created', newFriend });
+        })
+        .catch((err) => {
+            console.log(err);
+            return res.status(500).send({ message: err.message });
+        });
+});
 
 
 // Posts
@@ -213,6 +234,9 @@ app.post('/posts', async (req, res) => {
             return res.status(500).send({ message: err.message });
         });
 });
+
+
+
 
 
 // testes
