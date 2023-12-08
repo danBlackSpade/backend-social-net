@@ -60,14 +60,14 @@ app.get('/', (req, res) => {
 
 
 // User
-
-// Register User
+// register User
+// TODO: encrypt password, lowercase username, validate email
 app.post('/users', async (req, res) => {
     const user = new User(req.body);
     console.log(req.body.email);
     let doesEmailExist = await User.findOne({ email: req.body.email });
     let doesUsernameExist = await User.findOne({ username: req.body.username });
-    // res.send('Hello World!');
+
     if (doesEmailExist) {
         console.log('email already exists');
         // return res.status(400).json({ message: 'Email already exists'});
@@ -84,7 +84,7 @@ app.post('/users', async (req, res) => {
                     // newUser
                     email: newUser.email,
                     _id: newUser._id,
-                    username: newUser.username,
+                    username: newUser.username.toLowerCase(),
                     name: newUser.name,
 
                 });
@@ -95,8 +95,7 @@ app.post('/users', async (req, res) => {
             });
     }
 });
-
-// Login User
+// login User
 app.post('/users/login', async (req, res) => {
     let response = await User.findOne({
             email: req.body.email,
@@ -108,36 +107,144 @@ app.post('/users/login', async (req, res) => {
             message: 'Login successful', 
             email: response.email, 
             _id: response._id,
-            username: response.username
+            username: response.username.toLowerCase(),
+            name: response.name,
         });
     } else {
         console.log(response);
         return res.status(400).send({ message: 'Login failed' });
     }
 });
-
-// Logout User
+// logout
 app.post('/users/logout', async (req, res) => {
     
 });
 
-// Friends
-// Add Friend
+// Friend
+// add Friend
 app.post('/users/:id/friends', async (req, res) => {
-    const friend = new Friend({
+    // const friend = new Friend({
+    //     requester: req.params.id,
+    //     recipient: req.body.recipient,
+    //     status: 'requested'
+    // });
+
+    const checkFriendshipResquested = await Friend.findOne({
         requester: req.params.id,
-        recipient: req.body.recipient,
-        status: 'requested'
+        recipient: req.body.recipient
     });
+    const checkFriendshipPending = await Friend.findOne({
+        recipient: req.params.id,
+        requester: req.body.recipient
+    });
+    // const checkFriendshipFriends = await Friend.findOne({
+    //     $or: [
+    //         { requester: req.params.id, recipient: req.body.recipient, status: 'friends' },
+    //         { recipient: req.params.id, requester: req.body.recipient, status: 'friends' }
+    //     ]
+    // });
+
+    if (checkFriendshipResquested) {
+        console.log('friendship already requested');
+        return res.status(400).send({ message: 'Friendship already requested' });
+    } else if (checkFriendshipPending) {
+        console.log('friendship already pending');
+        return res.status(400).send({ message: 'Friendship already pending' });
+    } else {
+        console.log('friendship not requested');
+        //check if exists
+        const docA = await Friend.findOneAndUpdate(
+            { requester: req.params.id, recipient: req.body.recipient },
+            { $set: { status: 'requested' }},
+            { upsert: true, new: true }
+        );
+        const docB = await Friend.findOneAndUpdate(
+            { recipient: req.params.id, requester: req.body.recipient },
+            { $set: { status: 'pending' }},
+            { upsert: true, new: true }
+        );
+
+        // check if exists
+        // const updateUserA = await User.findOneAndUpdate(
+        //     { _id: req.params.id },
+        //     { $push: { friendsIds: docA._id }},
+        // );
+        const updateUserA = await User.findOneAndUpdate(
+            { _id: req.params.id },
+            { $addToSet: { friendsIds: docA._id }},
+        );
+        //update userB
+        const updateUserB = await User.findOneAndUpdate(
+            { _id: req.body.recipient },
+            { $push: { friendsIds: docB._id }},
+        )
+        
+        return res.status(201).send({ message: 'New friend created', docA, docB, updateUserA, updateUserB });
+
+    }
 
 
-    await friend.save()
-        .then((newFriend) => {
-            console.log(newFriend)
-            return res.status(201).send({ message: 'New friend created', newFriend });
+
+    // await friend.save()
+    //     .then((newFriend) => {
+    //         console.log(newFriend)
+    //         return res.status(201).send({ message: 'New friend created', newFriend });
+    //     })
+    //     .catch((err) => {
+    //         console.log(err);
+    //         return res.status(500).send({ message: err.message });
+    //     });
+});
+
+// accept Friend
+app.patch('/users/:id/friends/:friendId', async (req, res) => {
+    await Friend.findById(req.params.friendId)
+        .then((friend) => {
+            if (friend) {
+                friend.status = 'friends';
+                friend.updatedAt = Date.now();
+
+                friend.save()
+                    .then((updatedFriend) => {
+                        return res.status(200).send({ message: 'Friend updated', updatedFriend });
+                    })
+                    .catch((err) => {
+                        return res.status(500).send({ message: err.message });
+                    });
+            } else {
+                return res.status(404).send({ message: 'Friend not found' });
+            }
+        })
+});
+
+// reject Friend
+app.patch('/users/:id/friends/:friendId', async (req, res) => {
+    await Friend.findById(req.params.friendId)
+        .then((friend) => {
+            if (friend) {
+                friend.status = 'rejected';
+                friend.updatedAt = Date.now();
+
+                friend.save()
+                    .then((updatedFriend) => {
+                        return res.status(200).send({ message: 'Friend updated', updatedFriend });
+                    })
+                    .catch((err) => {
+                        return res.status(500).send({ message: err.message });
+                    });
+            } else {
+                return res.status(404).send({ message: 'Friend not found' });
+            }
+        })
+});
+
+// get Friends
+app.get('/users/:id/friends', async (req, res) => {
+    await Friend.find()
+        .then((friends) => {
+            return res.status(200).send({ friends });
         })
         .catch((err) => {
-            console.log(err);
             return res.status(500).send({ message: err.message });
         });
 });

@@ -25,6 +25,7 @@ const friendSchema = new mongoose.Schema({
             'requested',        //'requested',
             'pending',          //'pending',
             'friends',          //'friends'
+            'rejected',         //'rejected',
         ]
     },
     createdAt: {
@@ -38,4 +39,6 @@ const friendSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model('Friend', friendSchema);
+const Friend =  mongoose.model('Friend', friendSchema);
+
+module.exports = Friend;
