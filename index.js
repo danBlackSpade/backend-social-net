@@ -198,41 +198,40 @@ app.patch('/users/:id/friends', async (req, res) => {
 
 // accept Friend
 app.patch('/users/:id/friends/:friendId', async (req, res) => {
-    // await Friend.findById(req.params.friendId)
-    //     .then((friend) => {
-    //         if (friend) {
-    //             friend.status = 'friends';
-    //             friend.updatedAt = Date.now();
-
-    //             friend.save()
-    //                 .then((updatedFriend) => {
-    //                     return res.status(200).send({ message: 'Friend updated', updatedFriend });
-    //                 })
-    //                 .catch((err) => {
-    //                     return res.status(500).send({ message: err.message });
-    //                 });
-    //         } else {
-    //             return res.status(404).send({ message: 'Friend not found' });
-    //         }
-    //     })
+    // need to test
     const user = await User.findById(req.params.id);
     const friend = await User.findById(req.params.friendId);
     
-
     if (user && friend) {
-        if(user.friendsIds.includes(req.params.friendId)) {
-            return res.status(400).send({ message: 'Already friends on: ' + user.name });
-        } else if (friend.friendsIds.includes(req.params.id)) {
-            return res.status(400).send({ message: 'Already friends on: ' + friend.name });
-        } else {
-            user.friendsIds.push(req.params.friendId);
-            friend.friendsIds.push(req.params.id);
-            user.friendsRequestsReceived.pull(req.params.friendId);
-            friend.friendsRequestsSent.pull(req.params.id);
+        if(user.friendsRequestsReceived.includes(friend._id) && friend.friendsRequestsSent.includes(user._id)) {
+            user.friendsRequestsReceived.pull(friend._id);
+            friend.friendsRequestsSent.pull(user._id);
+            user.friendsIds.push(friend._id);
+            friend.friendsIds.push(user._id);
             user.save();
             friend.save();
             return res.status(200).send({ message: 'Friend request accepted', user });
+        } else {
+            return res.status(400).send({ message: 'Friend request not found' });
         }
+    } else {
+        return res.status(404).send({ message: 'Friend or User not found' });
+    }
+
+    // if (user && friend) {
+    //     if(user.friendsIds.includes(friend._id)) {
+    //         return res.status(400).send({ message: 'Already friends on: ' + user.name });
+    //     } else if (friend.friendsIds.includes(user._id)) {
+    //         return res.status(400).send({ message: 'Already friends on: ' + friend.name });
+    //     } else {
+    //         user.friendsIds.push(friend._id);
+    //         friend.friendsIds.push(user._id);
+    //         user.friendsRequestsReceived.pull(friend._id);
+    //         friend.friendsRequestsSent.pull(user._id);
+    //         user.save();
+    //         friend.save();
+    //         return res.status(200).send({ message: 'Friend request accepted', user });
+    //     }
 
         // const u = await User.findByIdAndUpdate(
         //     { _id: req.params.id }, 
@@ -253,9 +252,9 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
         // // User.findByIdAndUpdate(req.params.id, { $push: { friendsRequestsSent: req.body.friendId }}, { new: true, upsert: true });
         // console.log(u.friendsIds);
         // return res.status(200).send({ message: 'Friend request accepted', user });
-    } else {
-        return res.status(404).send({ message: 'Friend or User not found' });
-    }
+    // } else {
+    //     return res.status(404).send({ message: 'Friend or User not found' });
+    // }
 });
 
 // reject Friend
