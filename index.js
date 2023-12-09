@@ -122,95 +122,140 @@ app.post('/users/logout', async (req, res) => {
 
 // Friend
 // add Friend
-app.post('/users/:id/friends', async (req, res) => {
-    // const friend = new Friend({
-    //     requester: req.params.id,
-    //     recipient: req.body.recipient,
-    //     status: 'requested'
-    // });
+app.patch('/users/:id/friends', async (req, res) => {
 
-    // 2 
-    // const checkFriendshipRequested = await Friend.findOne({
-    //     requester: req.params.id,
-    //     recipient: req.body.recipient
-    // });
-    // const checkFriendshipPending = await Friend.findOne({
-    //     recipient: req.params.id,
-    //     requester: req.body.recipient
-    // });
-    // // const checkFriendshipFriends = await Friend.findOne({
-    // //     $or: [
-    // //         { requester: req.params.id, recipient: req.body.recipient, status: 'friends' },
-    // //         { recipient: req.params.id, requester: req.body.recipient, status: 'friends' }
-    // //     ]
-    // // });
+    const user = await User.findById(req.params.id);
+    const friend = await User.findById(req.body.friendId);
 
-    // if (checkFriendshipRequested) {
-    //     console.log('friendship already requested');
-    //     return res.status(400).send({ message: 'Friendship already requested' });
-    // } else if (checkFriendshipPending) {
-    //     console.log('friendship already pending');
-    //     return res.status(400).send({ message: 'Friendship already pending' });
+    if (user && friend) {
+        if (user.friendsIds.includes(friend._id)) {
+            return res.status(400).send({ message: 'Already friends on: ' + user.name });
+        } else if (friend.friendsIds.includes(user._id)) {
+            return res.status(400).send({ message: 'Already friends on: ' + friend.name });
+        } else if (user.friendsRequestsSent.includes(friend._id)) {
+            return res.status(400).send({ message: 'Friend request already sent' });
+        } else if (friend.friendsRequestsReceived.includes(user._id)) {
+            return res.status(400).send({ message: 'Friend request already received' });
+        } else {
+            console.log('Friend request sent');
+            user.friendsRequestsSent.push(friend._id);
+            friend.friendsRequestsReceived.push(user._id);
+            user.save();
+            friend.save();
+            return res.status(200).send({ message: 'Friend request sent', user });
+
+
+            // user.friendsIds.push(req.body.friendId);
+            // friend.friendsIds.push(req.params.id);
+            // user.save();
+            // friend.save();
+            // return res.status(200).send({ message: 'Friend added', user });
+        }
+    } else {
+        return res.status(404).send({ message: 'Friend or User not found' });
+    }
+
+
+    // const checkFriendsRequests = await User.findOne({
+    //     _id: req.params.id,
+    //     friendsRequests: req.body.friendId 
+    // });
+    // const checkFriendsRequestsSent = await User.findOne({
+    //     _id: req.params.id,
+    //     friendsRequestsSent: req.body.friendId 
+    // });
+    // const checkFriends = await User.findOne({
+    //     _id: req.params.id,
+    //     friendsIds: req.body.friendId 
+    // });
+    // if (checkFriendsRequests) {
+    //     console.log('Friend request already received');
+    //     return res.status(400).send({ message: 'Friend request already received' });
+    // } else if (checkFriendsRequestsSent) {
+    //     console.log('Friend request already sent');
+    //     return res.status(400).send({ message: 'Friend request already sent' });
+    // } else if (checkFriends) {
+    //     console.log('Already friends');
+    //     return res.status(400).send({ message: 'Already friends' });
     // } else {
-    //     console.log('friendship not requested');
-    //     //check if exists
-    //     const docA = await Friend.findOneAndUpdate(
-    //         { requester: req.params.id, recipient: req.body.recipient },
-    //         { $set: { status: 'requested' }},
-    //         { upsert: true, new: true }
-    //     );
-    //     const docB = await Friend.findOneAndUpdate(
-    //         { recipient: req.params.id, requester: req.body.recipient },
-    //         { $set: { status: 'pending' }},
-    //         { upsert: true, new: true }
-    //     );
-    //     const updateUserA = await User.findOneAndUpdate(
-    //         { _id: req.params.id },
-    //         { $addToSet: { friendsIds: docA._id }},
-    //     );
-    //     //update userB
-    //     const updateUserB = await User.findOneAndUpdate(
-    //         { _id: req.body.recipient },
-    //         { $push: { friendsIds: docB._id }},
+    //     const u = await User.findByIdAndUpdate(
+    //         { _id: req.params.id }, 
+    //         { $push: { friendsRequestsSent: req.body.friendId }},
+    //         { new: true, upsert: true }
     //     )
+    //     const u2 = await User.findByIdAndUpdate(
+    //         { _id: req.body.friendId }, 
+    //         { $push: { friendsRequestsReceived: req.params.id }},
+    //         { new: true, upsert: true }
+    //     )
+
         
-    //     return res.status(201).send({ message: 'New friend request created', docA, docB, updateUserA, updateUserB });
+    //     return res.status(200).send({ message: 'Friend request sent', user });
+        
     // }
-
-    // test simple User db
-
-    // const user = await User.findById(req.params.id);
-    const checkFriendRequestSent = await User.findOne({
-        _id: req.params.id,
-        friendsRequestsSent: req.body.recipient
-    });
-    const checkFriendRequestReceived = await User.findOne({
-        _id: req.params.id,
-        friendsRequestsReceived: req.body.recipient
-    });
-
-
+    
 });
 
 // accept Friend
 app.patch('/users/:id/friends/:friendId', async (req, res) => {
-    await Friend.findById(req.params.friendId)
-        .then((friend) => {
-            if (friend) {
-                friend.status = 'friends';
-                friend.updatedAt = Date.now();
+    // await Friend.findById(req.params.friendId)
+    //     .then((friend) => {
+    //         if (friend) {
+    //             friend.status = 'friends';
+    //             friend.updatedAt = Date.now();
 
-                friend.save()
-                    .then((updatedFriend) => {
-                        return res.status(200).send({ message: 'Friend updated', updatedFriend });
-                    })
-                    .catch((err) => {
-                        return res.status(500).send({ message: err.message });
-                    });
-            } else {
-                return res.status(404).send({ message: 'Friend not found' });
-            }
-        })
+    //             friend.save()
+    //                 .then((updatedFriend) => {
+    //                     return res.status(200).send({ message: 'Friend updated', updatedFriend });
+    //                 })
+    //                 .catch((err) => {
+    //                     return res.status(500).send({ message: err.message });
+    //                 });
+    //         } else {
+    //             return res.status(404).send({ message: 'Friend not found' });
+    //         }
+    //     })
+    const user = await User.findById(req.params.id);
+    const friend = await User.findById(req.params.friendId);
+    
+
+    if (user && friend) {
+        if(user.friendsIds.includes(req.params.friendId)) {
+            return res.status(400).send({ message: 'Already friends on: ' + user.name });
+        } else if (friend.friendsIds.includes(req.params.id)) {
+            return res.status(400).send({ message: 'Already friends on: ' + friend.name });
+        } else {
+            user.friendsIds.push(req.params.friendId);
+            friend.friendsIds.push(req.params.id);
+            user.friendsRequestsReceived.pull(req.params.friendId);
+            friend.friendsRequestsSent.pull(req.params.id);
+            user.save();
+            friend.save();
+            return res.status(200).send({ message: 'Friend request accepted', user });
+        }
+
+        // const u = await User.findByIdAndUpdate(
+        //     { _id: req.params.id }, 
+        //     { $push: { friendsIds: friend._id }},
+        //     { $pull: { friendsRequestsReceived: friend._id }},
+        //     { new: true, upsert: true }
+        // )
+        // const u2 = await User.findByIdAndUpdate(
+        //     { _id: req.params.friendId }, 
+        //     { $push: { friendsIds: user._id }},
+        //     { $pull: { friendsRequestsSent: user._id }},
+        //     { new: true, upsert: true }
+        // )
+
+
+        // console.log(u);
+        // console.log('U2 : ' + u2);
+        // // User.findByIdAndUpdate(req.params.id, { $push: { friendsRequestsSent: req.body.friendId }}, { new: true, upsert: true });
+        // console.log(u.friendsIds);
+        // return res.status(200).send({ message: 'Friend request accepted', user });
+    } else {
+        return res.status(404).send({ message: 'Friend or User not found' });
+    }
 });
 
 // reject Friend
@@ -301,7 +346,7 @@ app.get('/users/:id/friends', async (req, res) => {
     // }
 
     // 2
-    const user = await User.findById(req.params.id);
+    
     // const getFriends = await User.find({
     //     _id: req.params.id,
     //     friendsIds: req.body
@@ -358,6 +403,7 @@ app.get('/users/:id/friends', async (req, res) => {
     // });
     
     // t4
+    const user = await User.findById(req.params.id);
     const getFriends = user.friendsIds;
 
     if (getFriends) {
@@ -373,24 +419,38 @@ app.get('/users/:id/friends', async (req, res) => {
 
 // get pending Friends
 app.get('/users/:id/friends/pending', async (req, res) => {
-    await Friend.find({ status: 'pending' })
-        .then((friends) => {
-            return res.status(200).send({ friends });
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
+    const user = await User.findById(req.params.id);
+    if (user) {
+        console.log(user.friendsRequestsReceived);
+        // const f = await Friend.find({ _id: { $in: user.friendsRequestsReceived }});
+        const f = await User.find({ _id: { $in: user.friendsRequestsReceived }});
+        // const f = user.friendsRequestsReceived;;
+        console.log(f.length);
+        const friendsRequestsReceived = f.map((friend) => {
+            return {id: friend._id, name: friend.name, username: friend.username};
         });
+        return res.status(200).send({ friendsRequestsReceived });
+    } else {
+        console.log(user);
+        return res.send({ message: 'User not found' });
+    }
 });
 
 // get requested Friends
 app.get('/users/:id/friends/requested', async (req, res) => {
-    await Friend.find({ status: 'requested' })
-        .then((friends) => {
-            return res.status(200).send({ friends });
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
+    const user = await User.findById(req.params.id);
+    if (user) {
+        console.log(user.friendsRequestsSent);
+        const f = await User.find({ _id: { $in: user.friendsRequestsSent }});
+        console.log(f.length);
+        const friendsRequestsSent = f.map((friend) => {
+            return {id: friend._id, name: friend.name, username: friend.username};
         });
+        return res.status(200).send({ friendsRequestsSent });
+    } else {
+        console.log(user);
+        return res.send({ message: 'User not found' });
+    }
 });
 
 // get friends Friends
@@ -489,6 +549,11 @@ app.post('/posts', async (req, res) => {
 });
 
 
+
+// Friends 2 approach
+app.get('/users/:id/friends', async (req, res) => {
+
+});
 
 
 

@@ -33,8 +33,21 @@ const userSchema = new mongoose.Schema({
     },
     friendsIds: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Friend'
+        ref: 'User'
     }],
+    friendsRequestsReceived: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    friendsRequestsSent: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+
+    //test
+
+
+
     updatedAt: {
         type: Date
     }
