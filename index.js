@@ -129,71 +129,67 @@ app.post('/users/:id/friends', async (req, res) => {
     //     status: 'requested'
     // });
 
-    const checkFriendshipResquested = await Friend.findOne({
-        requester: req.params.id,
-        recipient: req.body.recipient
-    });
-    const checkFriendshipPending = await Friend.findOne({
-        recipient: req.params.id,
-        requester: req.body.recipient
-    });
-    // const checkFriendshipFriends = await Friend.findOne({
-    //     $or: [
-    //         { requester: req.params.id, recipient: req.body.recipient, status: 'friends' },
-    //         { recipient: req.params.id, requester: req.body.recipient, status: 'friends' }
-    //     ]
+    // 2 
+    // const checkFriendshipRequested = await Friend.findOne({
+    //     requester: req.params.id,
+    //     recipient: req.body.recipient
     // });
+    // const checkFriendshipPending = await Friend.findOne({
+    //     recipient: req.params.id,
+    //     requester: req.body.recipient
+    // });
+    // // const checkFriendshipFriends = await Friend.findOne({
+    // //     $or: [
+    // //         { requester: req.params.id, recipient: req.body.recipient, status: 'friends' },
+    // //         { recipient: req.params.id, requester: req.body.recipient, status: 'friends' }
+    // //     ]
+    // // });
 
-    if (checkFriendshipResquested) {
-        console.log('friendship already requested');
-        return res.status(400).send({ message: 'Friendship already requested' });
-    } else if (checkFriendshipPending) {
-        console.log('friendship already pending');
-        return res.status(400).send({ message: 'Friendship already pending' });
-    } else {
-        console.log('friendship not requested');
-        //check if exists
-        const docA = await Friend.findOneAndUpdate(
-            { requester: req.params.id, recipient: req.body.recipient },
-            { $set: { status: 'requested' }},
-            { upsert: true, new: true }
-        );
-        const docB = await Friend.findOneAndUpdate(
-            { recipient: req.params.id, requester: req.body.recipient },
-            { $set: { status: 'pending' }},
-            { upsert: true, new: true }
-        );
-
-        // check if exists
-        // const updateUserA = await User.findOneAndUpdate(
-        //     { _id: req.params.id },
-        //     { $push: { friendsIds: docA._id }},
-        // );
-        const updateUserA = await User.findOneAndUpdate(
-            { _id: req.params.id },
-            { $addToSet: { friendsIds: docA._id }},
-        );
-        //update userB
-        const updateUserB = await User.findOneAndUpdate(
-            { _id: req.body.recipient },
-            { $push: { friendsIds: docB._id }},
-        )
+    // if (checkFriendshipRequested) {
+    //     console.log('friendship already requested');
+    //     return res.status(400).send({ message: 'Friendship already requested' });
+    // } else if (checkFriendshipPending) {
+    //     console.log('friendship already pending');
+    //     return res.status(400).send({ message: 'Friendship already pending' });
+    // } else {
+    //     console.log('friendship not requested');
+    //     //check if exists
+    //     const docA = await Friend.findOneAndUpdate(
+    //         { requester: req.params.id, recipient: req.body.recipient },
+    //         { $set: { status: 'requested' }},
+    //         { upsert: true, new: true }
+    //     );
+    //     const docB = await Friend.findOneAndUpdate(
+    //         { recipient: req.params.id, requester: req.body.recipient },
+    //         { $set: { status: 'pending' }},
+    //         { upsert: true, new: true }
+    //     );
+    //     const updateUserA = await User.findOneAndUpdate(
+    //         { _id: req.params.id },
+    //         { $addToSet: { friendsIds: docA._id }},
+    //     );
+    //     //update userB
+    //     const updateUserB = await User.findOneAndUpdate(
+    //         { _id: req.body.recipient },
+    //         { $push: { friendsIds: docB._id }},
+    //     )
         
-        return res.status(201).send({ message: 'New friend created', docA, docB, updateUserA, updateUserB });
+    //     return res.status(201).send({ message: 'New friend request created', docA, docB, updateUserA, updateUserB });
+    // }
 
-    }
+    // test simple User db
+
+    // const user = await User.findById(req.params.id);
+    const checkFriendRequestSent = await User.findOne({
+        _id: req.params.id,
+        friendsRequestsSent: req.body.recipient
+    });
+    const checkFriendRequestReceived = await User.findOne({
+        _id: req.params.id,
+        friendsRequestsReceived: req.body.recipient
+    });
 
 
-
-    // await friend.save()
-    //     .then((newFriend) => {
-    //         console.log(newFriend)
-    //         return res.status(201).send({ message: 'New friend created', newFriend });
-    //     })
-    //     .catch((err) => {
-    //         console.log(err);
-    //         return res.status(500).send({ message: err.message });
-    //     });
 });
 
 // accept Friend
@@ -238,9 +234,146 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
         })
 });
 
-// get Friends
+// get all Friends
 app.get('/users/:id/friends', async (req, res) => {
-    await Friend.find()
+
+    // await Friend.find()
+    //     .then((friends) => {
+    //         return res.status(200).send({ friends });
+    //     })
+    //     .catch((err) => {
+    //         return res.status(500).send({ message: err.message });
+    //     });
+
+    // const u = await User.aggregate([
+    //     // { $match: { _id: mongoose.Types.ObjectId(req.params.id) }},
+    //     // { $lookup: {
+    //     //     from: 'friends',
+    //     //     localField: 'friendsIds',
+    //     //     foreignField: '_id',
+    //     //     as: 'friends'
+    //     // }},
+    //     // { $project: {
+    //     //     _id: 1,
+    //     //     name: 1,
+    //     //     email: 1,
+    //     //     username: 1,
+    //     //     friends: 1
+    //     // }}
+    //     { "$lookup": {
+    //         "from": "friend",
+    //         "let": { "friendsIds": "$friendsIds" },
+    //         "pipeline": [
+    //             { "$match": { 
+    //                 // "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
+    //                 "recipient": new mongoose.Types.ObjectId(req.params.id),
+    //                 "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
+    //             } },
+    //             { "$project": { "status": "requested" } }
+    //         ],
+    //         "as": "friends"
+    //     }},
+    //     { "$addFields": {
+    //         "friendStatus": {
+    //             // "$cond": [
+    //             //     { "$eq": [ { "$size": "$friends" }, 0 ] },
+    //             //     "not friends",
+    //             //     { "$arrayElemAt": [ "$friends.status", 0 ] }
+    //             // ]
+    //             "$ifNull": [ { "$arrayElemAt": [ "$friends.status", 0 ] }, "not friends" ]
+    //         }
+    //     }}
+    // ])
+    // console.log(u);
+    // return res.status(200).send({ u });
+
+    // const u = await User.findById(req.params.id);
+    // if (u) {
+    //     console.log(u.friendsIds);
+    //     const f = await Friend.find({ _id: { $in: u.friendsIds }});
+    //     console.log(f);
+    
+
+    //     return res.status(200).send({ f });
+    // } else {
+    //     console.log(u);
+    //     return res.send({ message: 'User not found', u });
+    // }
+
+    // 2
+    const user = await User.findById(req.params.id);
+    // const getFriends = await User.find({
+    //     _id: req.params.id,
+    //     friendsIds: req.body
+    // });
+    // const getFriends = await User.aggregate([
+    //     { "$match": { "_id": new mongoose.Types.ObjectId(req.params.id) } },
+    //     { "$lookup": {
+    //         "from": "users",
+    //         "let": { "friendsIds": "$friendsIds" },
+    //         "pipeline": [
+    //             { "$match": { 
+    //                 "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
+    //             } },
+    //             { "$project": { "status": "friends" } }
+    //         ],
+    //         "as": "friends"
+    //     }},
+    //     { "$addFields": {
+    //         "friendStatus": {
+    //             "$ifNull": [ { "$arrayElemAt": [ "$friends.status", 0 ] }, "not friends" ] 
+    //         }
+    //     }}
+    // ]);
+
+    // const getFriends = await User.aggregate([
+    //     { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+    //     {
+    //         $lookup: {
+    //             from: 'User',
+    //             localField: 'friendsIds',
+    //             foreignField: '_id',
+    //             as: 'friends'
+    //         }
+    //     },
+ 
+    //     {
+    //         $group: {
+    //             _id: '$_id',
+    //             friends: { $push: '$friends' }
+    //         },
+
+            
+    //         // $limit: 1
+    //     },
+    //     {
+    //         $sort: { _id: 1 }
+    //     }
+    // ]);
+
+    // t3
+    // const getFriends = user.friendsIds.map(async (friend) => {
+    //     // console.log(friend);
+    //     return await User.findById(friend);
+    // });
+    
+    // t4
+    const getFriends = user.friendsIds;
+
+    if (getFriends) {
+;
+        console.log(getFriends);
+        return res.status(200).send({ "friends": getFriends });
+    } else {
+        console.log('Friends not found');
+        return res.send({ message: 'User not found' });
+    }
+
+});
+
+// get pending Friends
+app.get('/users/:id/friends/pending', async (req, res) => {
+    await Friend.find({ status: 'pending' })
         .then((friends) => {
             return res.status(200).send({ friends });
         })
@@ -248,6 +381,19 @@ app.get('/users/:id/friends', async (req, res) => {
             return res.status(500).send({ message: err.message });
         });
 });
+
+// get requested Friends
+app.get('/users/:id/friends/requested', async (req, res) => {
+    await Friend.find({ status: 'requested' })
+        .then((friends) => {
+            return res.status(200).send({ friends });
+        })
+        .catch((err) => {
+            return res.status(500).send({ message: err.message });
+        });
+});
+
+// get friends Friends
 
 
 // Posts
