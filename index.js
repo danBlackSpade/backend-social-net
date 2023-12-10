@@ -203,9 +203,9 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
     const friend = await User.findById(req.params.friendId);
     
     if (user && friend) {
-        if(user.friendsRequestsReceived.includes(friend._id) && friend.friendsRequestsSent.includes(user._id)) {
-            user.friendsRequestsReceived.pull(friend._id);
-            friend.friendsRequestsSent.pull(user._id);
+        if(user.friendsRequestsSent.includes(friend._id) && friend.friendsRequestsReceived.includes(user._id)) {
+            user.friendsRequestsSent.pull(friend._id);
+            friend.friendsRequestsReceived.pull(user._id);
             user.friendsIds.push(friend._id);
             friend.friendsIds.push(user._id);
             user.save();
@@ -281,127 +281,6 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
 // get all Friends
 app.get('/users/:id/friends', async (req, res) => {
 
-    // await Friend.find()
-    //     .then((friends) => {
-    //         return res.status(200).send({ friends });
-    //     })
-    //     .catch((err) => {
-    //         return res.status(500).send({ message: err.message });
-    //     });
-
-    // const u = await User.aggregate([
-    //     // { $match: { _id: mongoose.Types.ObjectId(req.params.id) }},
-    //     // { $lookup: {
-    //     //     from: 'friends',
-    //     //     localField: 'friendsIds',
-    //     //     foreignField: '_id',
-    //     //     as: 'friends'
-    //     // }},
-    //     // { $project: {
-    //     //     _id: 1,
-    //     //     name: 1,
-    //     //     email: 1,
-    //     //     username: 1,
-    //     //     friends: 1
-    //     // }}
-    //     { "$lookup": {
-    //         "from": "friend",
-    //         "let": { "friendsIds": "$friendsIds" },
-    //         "pipeline": [
-    //             { "$match": { 
-    //                 // "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
-    //                 "recipient": new mongoose.Types.ObjectId(req.params.id),
-    //                 "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
-    //             } },
-    //             { "$project": { "status": "requested" } }
-    //         ],
-    //         "as": "friends"
-    //     }},
-    //     { "$addFields": {
-    //         "friendStatus": {
-    //             // "$cond": [
-    //             //     { "$eq": [ { "$size": "$friends" }, 0 ] },
-    //             //     "not friends",
-    //             //     { "$arrayElemAt": [ "$friends.status", 0 ] }
-    //             // ]
-    //             "$ifNull": [ { "$arrayElemAt": [ "$friends.status", 0 ] }, "not friends" ]
-    //         }
-    //     }}
-    // ])
-    // console.log(u);
-    // return res.status(200).send({ u });
-
-    // const u = await User.findById(req.params.id);
-    // if (u) {
-    //     console.log(u.friendsIds);
-    //     const f = await Friend.find({ _id: { $in: u.friendsIds }});
-    //     console.log(f);
-    
-
-    //     return res.status(200).send({ f });
-    // } else {
-    //     console.log(u);
-    //     return res.send({ message: 'User not found', u });
-    // }
-
-    // 2
-    
-    // const getFriends = await User.find({
-    //     _id: req.params.id,
-    //     friendsIds: req.body
-    // });
-    // const getFriends = await User.aggregate([
-    //     { "$match": { "_id": new mongoose.Types.ObjectId(req.params.id) } },
-    //     { "$lookup": {
-    //         "from": "users",
-    //         "let": { "friendsIds": "$friendsIds" },
-    //         "pipeline": [
-    //             { "$match": { 
-    //                 "$expr": { "$in": [ "$_id", "$$friendsIds" ] } 
-    //             } },
-    //             { "$project": { "status": "friends" } }
-    //         ],
-    //         "as": "friends"
-    //     }},
-    //     { "$addFields": {
-    //         "friendStatus": {
-    //             "$ifNull": [ { "$arrayElemAt": [ "$friends.status", 0 ] }, "not friends" ] 
-    //         }
-    //     }}
-    // ]);
-
-    // const getFriends = await User.aggregate([
-    //     { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-    //     {
-    //         $lookup: {
-    //             from: 'User',
-    //             localField: 'friendsIds',
-    //             foreignField: '_id',
-    //             as: 'friends'
-    //         }
-    //     },
- 
-    //     {
-    //         $group: {
-    //             _id: '$_id',
-    //             friends: { $push: '$friends' }
-    //         },
-
-            
-    //         // $limit: 1
-    //     },
-    //     {
-    //         $sort: { _id: 1 }
-    //     }
-    // ]);
-
-    // t3
-    // const getFriends = user.friendsIds.map(async (friend) => {
-    //     // console.log(friend);
-    //     return await User.findById(friend);
-    // });
-    
-    // t4
     const user = await User.findById(req.params.id);
     const getFriends = user.friendsIds;
 
