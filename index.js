@@ -95,6 +95,31 @@ app.post('/users/logout', async (req, res) => {
     
 });
 
+// get all Users
+app.get('/users', async (req, res) => {
+    const users = await User.find();
+    if (users) {
+        return res.status(200).send({ users });
+    } else {
+        return res.status(404).send({ message: 'Users not found' });
+    }
+
+    // await User.find()
+    //     .then((users) => {
+    //         return res.status(200).send({ 
+    //             message: 'Users found', 
+    //             _id: users._id,
+    //             username: users.username,
+    //             name: users.name,
+    //             email: users.email,
+    //             avatar: users.avatar,
+    //         });
+    //     })
+    //     .catch((err) => {
+    //         return res.status(500).send({ message: err.message });
+    //     });
+});
+
 // Friend
 // add Friend
 app.patch('/users/:id/friends', async (req, res) => {
@@ -281,16 +306,6 @@ app.patch('/posts/:id/like', async (req, res) => {
     await Post.findById(req.params.id)
         .then((post) => {
             if (post) {
-                // post.likes = req.body.likes;
-            //     post.usersLikes = req.body.usersLikes;
-            //     post.updatedAt = Date.now();
-            //     post.save()
-            //         .then((updatedPost) => {
-            //             return res.status(200).send({ message: 'Post updated', updatedPost });
-            //         })
-            //         .catch((err) => {
-            //             return res.status(500).send({ message: err.message });
-            //         });
 
             post.updateOne({ 
                 $inc: { likes: 1 },

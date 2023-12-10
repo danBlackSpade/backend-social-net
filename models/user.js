@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
+        select: false,
         // minlength: 5,
         // maxlength: 1024
     },
@@ -26,6 +27,10 @@ const userSchema = new mongoose.Schema({
         minLength: 3,
         // maxlength: 20,
         unique: true
+    },
+    avatar: {
+        type: String,
+        default: 'https://i.pravatar.cc/100?u=john'
     },
     createdAt: {
         type: Date,
@@ -43,10 +48,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-
-    //test
-
-
 
     updatedAt: {
         type: Date
