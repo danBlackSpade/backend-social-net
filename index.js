@@ -10,37 +10,12 @@ const User = require('./models/user');
 const Post = require('./models/post');
 const Friend = require('./models/friend');
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-// const client = new MongoClient(uri, {
-//     serverApi: {
-//         version: ServerApiVersion.v1,
-//         strict: true,
-//         deprecationErrors: true,
-//     }
-// });
-
-// async function run() {
-//     try {
-//         await client.connect();
-//         await client.db('admin').command({ ping: 1 });
-//         console.log('Connected successfully to MONGODB server');
-//     } finally {
-//         // Ensures that the client will close when you finish/error
-//         await client.close();
-//     }
-// }
-
-// run().catch(console.dir);
-
 const app = express();
 const port = 3000;
 
-// app.use(cors());
-// app.use(bodyParser.urlencoded({ extended: false }));
-// app.use(bodyParser.json());
+
 app.use(express.json());
-// app.use(bodyParser.urlencoded({ extended: false }));
-// app.use(bodyParser.json());
+
 
 // Connect to MongoDB
 mongoose.connect(uri);
@@ -144,55 +119,10 @@ app.patch('/users/:id/friends', async (req, res) => {
             friend.save();
             return res.status(200).send({ message: 'Friend request sent', user });
 
-
-            // user.friendsIds.push(req.body.friendId);
-            // friend.friendsIds.push(req.params.id);
-            // user.save();
-            // friend.save();
-            // return res.status(200).send({ message: 'Friend added', user });
         }
     } else {
         return res.status(404).send({ message: 'Friend or User not found' });
     }
-
-
-    // const checkFriendsRequests = await User.findOne({
-    //     _id: req.params.id,
-    //     friendsRequests: req.body.friendId 
-    // });
-    // const checkFriendsRequestsSent = await User.findOne({
-    //     _id: req.params.id,
-    //     friendsRequestsSent: req.body.friendId 
-    // });
-    // const checkFriends = await User.findOne({
-    //     _id: req.params.id,
-    //     friendsIds: req.body.friendId 
-    // });
-    // if (checkFriendsRequests) {
-    //     console.log('Friend request already received');
-    //     return res.status(400).send({ message: 'Friend request already received' });
-    // } else if (checkFriendsRequestsSent) {
-    //     console.log('Friend request already sent');
-    //     return res.status(400).send({ message: 'Friend request already sent' });
-    // } else if (checkFriends) {
-    //     console.log('Already friends');
-    //     return res.status(400).send({ message: 'Already friends' });
-    // } else {
-    //     const u = await User.findByIdAndUpdate(
-    //         { _id: req.params.id }, 
-    //         { $push: { friendsRequestsSent: req.body.friendId }},
-    //         { new: true, upsert: true }
-    //     )
-    //     const u2 = await User.findByIdAndUpdate(
-    //         { _id: req.body.friendId }, 
-    //         { $push: { friendsRequestsReceived: req.params.id }},
-    //         { new: true, upsert: true }
-    //     )
-
-        
-    //     return res.status(200).send({ message: 'Friend request sent', user });
-        
-    // }
     
 });
 
@@ -218,43 +148,6 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
         return res.status(404).send({ message: 'Friend or User not found' });
     }
 
-    // if (user && friend) {
-    //     if(user.friendsIds.includes(friend._id)) {
-    //         return res.status(400).send({ message: 'Already friends on: ' + user.name });
-    //     } else if (friend.friendsIds.includes(user._id)) {
-    //         return res.status(400).send({ message: 'Already friends on: ' + friend.name });
-    //     } else {
-    //         user.friendsIds.push(friend._id);
-    //         friend.friendsIds.push(user._id);
-    //         user.friendsRequestsReceived.pull(friend._id);
-    //         friend.friendsRequestsSent.pull(user._id);
-    //         user.save();
-    //         friend.save();
-    //         return res.status(200).send({ message: 'Friend request accepted', user });
-    //     }
-
-        // const u = await User.findByIdAndUpdate(
-        //     { _id: req.params.id }, 
-        //     { $push: { friendsIds: friend._id }},
-        //     { $pull: { friendsRequestsReceived: friend._id }},
-        //     { new: true, upsert: true }
-        // )
-        // const u2 = await User.findByIdAndUpdate(
-        //     { _id: req.params.friendId }, 
-        //     { $push: { friendsIds: user._id }},
-        //     { $pull: { friendsRequestsSent: user._id }},
-        //     { new: true, upsert: true }
-        // )
-
-
-        // console.log(u);
-        // console.log('U2 : ' + u2);
-        // // User.findByIdAndUpdate(req.params.id, { $push: { friendsRequestsSent: req.body.friendId }}, { new: true, upsert: true });
-        // console.log(u.friendsIds);
-        // return res.status(200).send({ message: 'Friend request accepted', user });
-    // } else {
-    //     return res.status(404).send({ message: 'Friend or User not found' });
-    // }
 });
 
 // reject Friend
@@ -290,7 +183,7 @@ app.get('/users/:id/friends', async (req, res) => {
         return res.status(200).send({ "friends": getFriends });
     } else {
         console.log('Friends not found');
-        return res.send({ message: 'User not found' });
+        return res.send({ message: 'Friends or User not found' });
     }
 
 });
