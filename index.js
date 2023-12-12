@@ -3,8 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mongodb.net/?retryWrites=true&w=majority";
+
 
 
 const Product = require('./models/product');
@@ -15,6 +16,11 @@ const Friend = require('./models/friend');
 const app = express();
 const port = 3000;
 
+
+// Insecure - For demo purposes only
+const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mongodb.net/?retryWrites=true&w=majority";
+const ACCESS_TOKEN_SECRET = '23a004412f7aa859e78af1ae0fd6ad56ad2ae36eb1eb7b4a84c71107fd59835e481ece60c2cbd9b29404bd613e930f3ff1b1eb7c680923553c68b369bc6e7d7e'
+const REFRESH_TOKEN_SECRET = '934c952ca416b96e82aa87c43b2c74a70b3127bcb7b82c698ee1bca83d147893c6aa602db7741fe0978c630ce8aec6f98b6b97a438966019b69a3ce500d3eec1'
 
 app.use(express.json());
 
@@ -38,7 +44,6 @@ app.get('/', (req, res) => {
 
 // User
 // register User
-// TODO: encrypt password, lowercase username, validate email
 app.post('/users', async (req, res) => {
     const user = new User(req.body);
     console.log(req.body.email);
@@ -76,9 +81,13 @@ app.post('/users/login', async (req, res) => {
             email: req.body.email
         }).select('+password');
     if (await bcrypt.compareSync(req.body.password, user.password)) {
+        const accessToken = jwt.sign({ userId: user._id }, ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        const refreshToken = jwt.sign({ userId: user._id }, REFRESH_TOKEN_SECRET);
         return res.status(200).send({ 
             message: 'Login successful', 
-            user
+            user,
+            accessToken: accessToken,
+            refreshToken: refreshToken
         });
     } else {    
         return res.status(400).send({ message: 'Login failed' });
