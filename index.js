@@ -2,6 +2,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const bcrypt = require('bcrypt');
+
 const uri = "mongodb+srv://user100:desafioninja@cluster0-desafioninja.4aas6p5.mongodb.net/?retryWrites=true&w=majority";
 
 
@@ -51,44 +53,39 @@ app.post('/users', async (req, res) => {
         console.log('username already exists');
         return res.status(400).send({ message: 'Usuário já cadastrado' });
     } else {
-        await user.save()
-            .then((newUser) => {
-                console.log(newUser);
-                return res.status(201).send({ 
-                    message: 'Usuário criado com sucesso!', 
-                    // newUser
-                    email: newUser.email,
-                    _id: newUser._id,
-                    username: newUser.username.toLowerCase(),
-                    name: newUser.name,
-
-                });
-            })
-            .catch((err) => {
+        user.password = bcrypt.hash(user.password, 10, (err, hash) => {
+            if (err) {
                 console.log(err);
                 return res.status(500).send({ message: err.message });
-            });
+            } else {
+                user.password = hash;
+                user.username = user.username.toLowerCase();
+                console.log(user);
+                user.save();
+                return res.status(201).send({
+                    message: 'Usuário criado com sucesso!', 
+                    user
+                });
+            }
+        });
     }
 });
 // login User
 app.post('/users/login', async (req, res) => {
-    let response = await User.findOne({
-            email: req.body.email,
-            password: req.body.password
-        });
-        console.log(response);
-    if (response) {
+    let user = await User.findOne({
+            email: req.body.email
+        }).select('+password');
+        console.log(user.password);
+
+    if (await bcrypt.compareSync(req.body.password, user.password)) {
         return res.status(200).send({ 
             message: 'Login successful', 
-            email: response.email, 
-            _id: response._id,
-            username: response.username.toLowerCase(),
-            name: response.name,
+            user
         });
-    } else {
-        console.log(response);
+    } else {    
         return res.status(400).send({ message: 'Login failed' });
     }
+
 });
 // logout
 app.post('/users/logout', async (req, res) => {
@@ -141,7 +138,6 @@ app.patch('/users/:id/friends', async (req, res) => {
 
 // accept Friend
 app.patch('/users/:id/friends/:friendId', async (req, res) => {
-    // need to test
     const user = await User.findById(req.params.id);
     const friend = await User.findById(req.params.friendId);
     
@@ -256,6 +252,7 @@ app.get('/users/:id/friends/requested', async (req, res) => {
 
 
 // Posts
+// TODO: check if authenticated
 app.get('/posts', async (req, res) => {
     await Post.find()
         .then((posts) => {
