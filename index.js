@@ -77,7 +77,7 @@ app.post('/users/login', async (req, res) => {
             password: req.body.password
         });
         console.log(response);
-    if (await response) {
+    if (response) {
         return res.status(200).send({ 
             message: 'Login successful', 
             email: response.email, 
@@ -103,21 +103,6 @@ app.get('/users', async (req, res) => {
     } else {
         return res.status(404).send({ message: 'Users not found' });
     }
-
-    // await User.find()
-    //     .then((users) => {
-    //         return res.status(200).send({ 
-    //             message: 'Users found', 
-    //             _id: users._id,
-    //             username: users.username,
-    //             name: users.name,
-    //             email: users.email,
-    //             avatar: users.avatar,
-    //         });
-    //     })
-    //     .catch((err) => {
-    //         return res.status(500).send({ message: err.message });
-    //     });
 });
 
 // Friend
@@ -136,7 +121,10 @@ app.patch('/users/:id/friends', async (req, res) => {
             return res.status(400).send({ message: 'Friend request already sent' });
         } else if (friend.friendsRequestsReceived.includes(user._id)) {
             return res.status(400).send({ message: 'Friend request already received' });
-        } else {
+        } else if (friend.friendsRequestsSentRejected.includes(user._id)) {
+            return res.status(400).send({ message: 'Friend request already rejected' });
+        }
+        else {
             console.log('Friend request sent');
             user.friendsRequestsSent.push(friend._id);
             friend.friendsRequestsReceived.push(user._id);
@@ -177,40 +165,54 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
 
 // reject Friend
 app.patch('/users/:id/friends/:friendId', async (req, res) => {
-    await Friend.findById(req.params.friendId)
-        .then((friend) => {
-            if (friend) {
-                friend.status = 'rejected';
-                friend.updatedAt = Date.now();
+    const user = await User.findById(req.params.id);
+    const friend = await User.findById(req.params.friendId);
 
-                friend.save()
-                    .then((updatedFriend) => {
-                        return res.status(200).send({ message: 'Friend updated', updatedFriend });
-                    })
-                    .catch((err) => {
-                        return res.status(500).send({ message: err.message });
-                    });
-            } else {
-                return res.status(404).send({ message: 'Friend not found' });
-            }
-        })
+    if (user && friend) {
+        if(user.friendsRequestsSent.includes(friend._id) && friend.friendsRequestsReceived.includes(user._id)) {
+            user.friendsRequestsSent.pull(friend._id);
+            friend.friendsRequestsReceived.pull(user._id);
+            user.friendsRequestsSentRejected.push(friend._id);
+            // friend.friendsRequestsSentRejected.push(user._id);
+            user.save();
+            friend.save();
+            return res.status(200).send({ message: 'Friend request rejected', user });
+        } else {
+            return res.status(400).send({ message: 'Friend request not found' });
+        }
+    }
+    
+    // await Friend.findById(req.params.friendId)
+    //     .then((friend) => {
+    //         if (friend) {
+    //             friend.status = 'rejected';
+    //             friend.updatedAt = Date.now();
+
+    //             friend.save()
+    //                 .then((updatedFriend) => {
+    //                     return res.status(200).send({ message: 'Friend updated', updatedFriend });
+    //                 })
+    //                 .catch((err) => {
+    //                     return res.status(500).send({ message: err.message });
+    //                 });
+    //         } else {
+    //             return res.status(404).send({ message: 'Friend not found' });
+    //         }
+    //     })
 });
 
 // get all Friends
 app.get('/users/:id/friends', async (req, res) => {
-
     const user = await User.findById(req.params.id);
     const getFriends = user.friendsIds;
 
     if (getFriends) {
-;
         console.log(getFriends);
         return res.status(200).send({ "friends": getFriends });
     } else {
         console.log('Friends not found');
         return res.send({ message: 'Friends or User not found' });
     }
-
 });
 
 // get pending Friends
@@ -223,7 +225,8 @@ app.get('/users/:id/friends/pending', async (req, res) => {
         // const f = user.friendsRequestsReceived;;
         console.log(f.length);
         const friendsRequestsReceived = f.map((friend) => {
-            return {id: friend._id, name: friend.name, username: friend.username};
+            return {id: friend._id, name: friend.name, username: friend.username, avatar: friend.avatar, email: friend.email};
+            // return {friend};
         });
         return res.status(200).send({ friendsRequestsReceived });
     } else {
@@ -240,7 +243,7 @@ app.get('/users/:id/friends/requested', async (req, res) => {
         const f = await User.find({ _id: { $in: user.friendsRequestsSent }});
         console.log(f.length);
         const friendsRequestsSent = f.map((friend) => {
-            return {id: friend._id, name: friend.name, username: friend.username};
+            return {id: friend._id, name: friend.name, username: friend.username, avatar: friend.avatar, email: friend.email};
         });
         return res.status(200).send({ friendsRequestsSent });
     } else {
