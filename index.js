@@ -75,8 +75,6 @@ app.post('/users/login', async (req, res) => {
     let user = await User.findOne({
             email: req.body.email
         }).select('+password');
-        console.log(user.password);
-
     if (await bcrypt.compareSync(req.body.password, user.password)) {
         return res.status(200).send({ 
             message: 'Login successful', 

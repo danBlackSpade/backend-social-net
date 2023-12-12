@@ -15,3 +15,7 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+
+# drafts
+*.draft.md
