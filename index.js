@@ -36,6 +36,26 @@ db.once('open', function() {
 
 
 
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // const token = authHeader.split(' ')[1]; // Bearer TOKEN
+    if (token == null) {
+        return res.sendStatus(401).send({ message: 'Token not found' });
+    }
+
+    jwt.verify(token, ACCESS_TOKEN_SECRET, (err, user) => {
+        if (err) {
+            return res.sendStatus(403).send({ message: 'Token not valid' });
+        } else {
+            req.user = user;
+            next();
+        }
+        // req.user = user;
+        // next();
+    });
+}
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
@@ -260,7 +280,7 @@ app.get('/users/:id/friends/requested', async (req, res) => {
 
 // Posts
 // TODO: check if authenticated
-app.get('/posts', async (req, res) => {
+app.get('/posts', authenticateToken, async (req, res) => {
     await Post.find()
         .then((posts) => {
             return res.status(200).send({ posts });
