@@ -2,10 +2,11 @@
 
 ## Run
 
-- Node 20.9 (recommended NVM)
+- Install Node 20.9 (recommended NVM)
 - run:
 
 ```
+npm install
 node ./index.js
 ```
 
