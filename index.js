@@ -356,11 +356,14 @@ app.patch('/posts/:id/like/:uid', authenticateToken ,async (req, res) => {
 
 });
 // new Post
-app.post('/posts', async (req, res) => {
+app.post('/posts/:user_id', authenticateToken, async (req, res) => {
+    const user = await User.findById(req.params.user_id);
     const post = new Post(req.body);
-    console.log('creation started...');
-
-    await post.save()
+    console.log(user)
+    if (user) {
+        console.log(user)
+        post.owner = user._id;
+        await post.save()
         .then((newPost) => {
             console.log(newPost)
             return res.status(201).send({ message: 'New post created', newPost });
@@ -369,6 +372,9 @@ app.post('/posts', async (req, res) => {
             console.log(err);
             return res.status(500).send({ message: err.message });
         });
+    } else {
+        return res.status(404).send({ message: 'User not found' });
+    }
 });
 
 // get all Posts User likes
@@ -384,9 +390,32 @@ app.get('/posts/:id/likes', authenticateToken, async (req, res) => {
     }
 });
 
-// get all Posts User created
-
 // get all Posts User dislikes
+app.get('/posts/:id/dislikes', authenticateToken, async (req, res) => {
+    const user = await User.findById(req.params.id);
+    const allPostsDisliked = await Post.find({ usersDislikes: { $in: user._id }});
+    console.log(allPostsDisliked);
+    console.log(allPostsDisliked.length);
+    if (allPostsDisliked) {
+        return res.status(200).send({ allPostsDisliked });
+    } else {
+        return res.status(404).send({ message: 'Posts not found' });
+    }
+});
+
+// get all Posts User created
+app.get('/posts/:id/created', authenticateToken, async (req, res) => {
+    const user = await User.findById(req.params.id);
+    const allPostsCreated = await Post.find({ owner: user._id });
+    console.log(allPostsCreated);
+
+    if (allPostsCreated) {
+        return res.status(200).send({ allPostsCreated });
+    } else {
+        return res.status(404).send({ message: 'Posts not found' });
+    }
+});
+
 
 
 // Friends 2 approach

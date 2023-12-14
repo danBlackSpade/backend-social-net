@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 
 
 const postSchema = new mongoose.Schema({
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     title: {
         type: String,
         required: true,
@@ -33,7 +38,10 @@ const postSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'User'       
     },
-
+    usersDislikes: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User'       
+    },
     createdAt: {
         type: Date,
         default: Date.now
