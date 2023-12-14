@@ -306,15 +306,35 @@ app.get('/posts/:id', async (req, res) => {
         });
 });
 
+// get all public Posts
+app.get('/posts', async (req, res) => {
+    await Post.find({ isPublic: true }).sort({ createdAt: -1 })
+        .then((posts) => {
+            return res.status(200).send({ posts });
+        })
+        .catch((err) => {
+            return res.status(500).send({ message: err.message });
+        });
+});
+
 // delete Post by id
 
 // update Post by id
 
 
-
-// get all public Posts
-
 // get all friends Posts
+app.get('/posts/:id/friends', authenticateToken, async (req, res) => {
+    const user = await User.findById(req.params.id);
+    const allFriends = user.friendsIds;
+    const allFriendsPosts = await Post.find({ owner: { $in: allFriends }});
+    console.log(allFriendsPosts);
+    console.log(allFriendsPosts.length);
+    if (allFriendsPosts) {
+        return res.status(200).send({ allFriendsPosts });
+    } else {
+        return res.status(404).send({ message: 'Posts not found' });
+    }
+});
 
 // like Post
 app.patch('/posts/:id/like/:user_id', authenticateToken ,async (req, res) => {

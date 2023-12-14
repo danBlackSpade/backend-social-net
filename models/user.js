@@ -36,19 +36,26 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    friendsIds: [{
+    friendsIds: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User'
+    },
+    friendsRequestsReceived: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User'
+    },
+    friendsRequestsSent: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User'
+    },
+    // friendsRequestsReceivedRejected: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'User'
+    // }],
+    friendsRequestsSentRejected: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    friendsRequestsReceived: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
-    friendsRequestsSent: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
-
     updatedAt: {
         type: Date
     }
