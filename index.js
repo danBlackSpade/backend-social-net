@@ -57,10 +57,24 @@ function authenticateToken(req, res, next) {
 }
 
 
+
+// TEST
+// get all Users
+app.get('/users', async (req, res) => {
+    const users = await User.find();
+    if (users) {
+        return res.status(200).send({ users });
+    } else {
+        return res.status(404).send({ message: 'Users not found' });
+    }
+});
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+
+// END TEST
 
 // User
 // register User
@@ -123,17 +137,6 @@ app.post('/users/logout', async (req, res) => {
     
 });
 
-// get all Users
-app.get('/users', async (req, res) => {
-    const users = await User.find();
-    if (users) {
-        return res.status(200).send({ users });
-    } else {
-        return res.status(404).send({ message: 'Users not found' });
-    }
-});
-
-// Friend
 // add Friend
 app.patch('/users/:id/friends', async (req, res) => {
 
@@ -208,24 +211,6 @@ app.patch('/users/:id/friends/:friendId', async (req, res) => {
             return res.status(400).send({ message: 'Friend request not found' });
         }
     }
-    
-    // await Friend.findById(req.params.friendId)
-    //     .then((friend) => {
-    //         if (friend) {
-    //             friend.status = 'rejected';
-    //             friend.updatedAt = Date.now();
-
-    //             friend.save()
-    //                 .then((updatedFriend) => {
-    //                     return res.status(200).send({ message: 'Friend updated', updatedFriend });
-    //                 })
-    //                 .catch((err) => {
-    //                     return res.status(500).send({ message: err.message });
-    //                 });
-    //         } else {
-    //             return res.status(404).send({ message: 'Friend not found' });
-    //         }
-    //     })
 });
 
 // get all Friends
@@ -252,7 +237,13 @@ app.get('/users/:id/friends/pending', async (req, res) => {
         // const f = user.friendsRequestsReceived;;
         console.log(f.length);
         const friendsRequestsReceived = f.map((friend) => {
-            return {id: friend._id, name: friend.name, username: friend.username, avatar: friend.avatar, email: friend.email};
+            return {
+                id: friend._id, 
+                name: friend.name, 
+                username: friend.username, 
+                avatar: friend.avatar, 
+                email: friend.email
+            };
             // return {friend};
         });
         return res.status(200).send({ friendsRequestsReceived });
@@ -270,7 +261,13 @@ app.get('/users/:id/friends/requested', async (req, res) => {
         const f = await User.find({ _id: { $in: user.friendsRequestsSent }});
         console.log(f.length);
         const friendsRequestsSent = f.map((friend) => {
-            return {id: friend._id, name: friend.name, username: friend.username, avatar: friend.avatar, email: friend.email};
+            return {
+                id: friend._id, 
+                name: friend.name, 
+                username: friend.username, 
+                avatar: friend.avatar, 
+                email: friend.email
+            };
         });
         return res.status(200).send({ friendsRequestsSent });
     } else {
@@ -283,16 +280,18 @@ app.get('/users/:id/friends/requested', async (req, res) => {
 
 
 // Posts
-app.get('/posts', authenticateToken, async (req, res) => {
-    await Post.find()
-        .then((posts) => {
-            return res.status(200).send({ posts });
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
-});
+// get all Posts
+// app.get('/posts', authenticateToken, async (req, res) => {
+//     await Post.find()
+//         .then((posts) => {
+//             return res.status(200).send({ posts });
+//         })
+//         .catch((err) => {
+//             return res.status(500).send({ message: err.message });
+//         });
+// });
 
+// get Post by id
 app.get('/posts/:id', async (req, res) => {
     await Post.findById(req.params.id)
         .then((post) => {
@@ -307,34 +306,20 @@ app.get('/posts/:id', async (req, res) => {
         });
 });
 
-// app.patch('/posts/:id', authenticateToken, async (req, res) => {
-//     await Post.findById(req.params.id)
-//         .then((post) => {
-//             if (post) {
-//                 post.title = req.body.title;
-//                 post.content = req.body.content;
-//                 post.isPublic = req.body.isPublic;
-//                 // post.likes = req.body.likes;
-//                 // post.dislikes = req.body.dislikes;
-//                 post.usersLikes.push(req.body._id);
-//                 post.updatedAt = Date.now();
+// delete Post by id
 
-//                 post.save()
-//                     .then((updatedPost) => {
-//                         return res.status(200).send({ message: 'Post updated', updatedPost });
-//                     })
-//                     .catch((err) => {
-//                         return res.status(500).send({ message: err.message });
-//                     });
-//             } else {
-//                 return res.status(404).send({ message: 'Post not found' });
-//             }
-//         })
-// });
-// add like Post
-app.patch('/posts/:id/like/:uid', authenticateToken ,async (req, res) => {
+// update Post by id
+
+
+
+// get all public Posts
+
+// get all friends Posts
+
+// like Post
+app.patch('/posts/:id/like/:user_id', authenticateToken ,async (req, res) => {
     const post = await Post.findById(req.params.id);
-    const user = await User.findById(req.params.uid);
+    const user = await User.findById(req.params.user_id);
 
     if (post && user) {
         console.log(post)
@@ -352,9 +337,31 @@ app.patch('/posts/:id/like/:uid', authenticateToken ,async (req, res) => {
     } else {
         return res.status(404).send({ message: 'Post or User not found' });
     }
-
-
 });
+
+// dislike Post
+app.patch('/posts/:id/dislike/:user_id', authenticateToken, async (req, res) => {
+    const post = await Post.findById(req.params.id);
+    const user = await User.findById(req.params.user_id);
+
+    if (post && user) {
+        console.log(post)
+        console.log(user)
+        if (post.usersDislikes.includes(user._id)) {
+            return res.status(400).send({ message: 'Already disliked' });
+        } else {
+            console.log('Dislike added');
+            post.dislikes += 1;
+            post.usersDislikes.push(user._id);
+            post.updatedAt = Date.now();
+            post.save();
+            return res.status(200).send({ message: 'Dislike added', post });
+        }
+    } else {
+        return res.status(404).send({ message: 'Post or User not found' });
+    }
+});
+
 // new Post
 app.post('/posts/:user_id', authenticateToken, async (req, res) => {
     const user = await User.findById(req.params.user_id);
@@ -417,12 +424,10 @@ app.get('/posts/:id/created', authenticateToken, async (req, res) => {
 });
 
 
+// // Friends 2 approach
+// app.get('/users/:id/friends', async (req, res) => {
 
-// Friends 2 approach
-app.get('/users/:id/friends', async (req, res) => {
-
-});
-
+// });
 
 
 
