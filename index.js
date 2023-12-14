@@ -83,13 +83,17 @@ app.post('/users', async (req, res) => {
                 console.log(err);
                 return res.status(500).send({ message: err.message });
             } else {
+                const accessToken = jwt.sign({ userId: user._id }, ACCESS_TOKEN_SECRET, { expiresIn: '30d' });
+                const refreshToken = jwt.sign({ userId: user._id }, REFRESH_TOKEN_SECRET);
                 user.password = hash;
                 user.username = user.username.toLowerCase();
                 console.log(user);
                 user.save();
                 return res.status(201).send({
                     message: 'Usuário criado com sucesso!', 
-                    user
+                    user,
+                    accessToken: accessToken,
+                    refreshToken: refreshToken
                 });
             }
         });
@@ -101,7 +105,7 @@ app.post('/users/login', async (req, res) => {
             email: req.body.email
         }).select('+password');
     if (await bcrypt.compareSync(req.body.password, user.password)) {
-        const accessToken = jwt.sign({ userId: user._id }, ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        const accessToken = jwt.sign({ userId: user._id }, ACCESS_TOKEN_SECRET, { expiresIn: '30d' });
         const refreshToken = jwt.sign({ userId: user._id }, REFRESH_TOKEN_SECRET);
         return res.status(200).send({ 
             message: 'Login successful', 
@@ -279,7 +283,6 @@ app.get('/users/:id/friends/requested', async (req, res) => {
 
 
 // Posts
-// TODO: check if authenticated
 app.get('/posts', authenticateToken, async (req, res) => {
     await Post.find()
         .then((posts) => {
@@ -304,48 +307,55 @@ app.get('/posts/:id', async (req, res) => {
         });
 });
 
-app.patch('/posts/:id', async (req, res) => {
-    await Post.findById(req.params.id)
-        .then((post) => {
-            if (post) {
-                post.title = req.body.title;
-                post.content = req.body.content;
-                post.isPublic = req.body.isPublic;
-                post.likes = req.body.likes;
-                post.dislikes = req.body.dislikes;
-                post.usersLikes = req.body.usersLikes;
-                post.updatedAt = Date.now();
+// app.patch('/posts/:id', authenticateToken, async (req, res) => {
+//     await Post.findById(req.params.id)
+//         .then((post) => {
+//             if (post) {
+//                 post.title = req.body.title;
+//                 post.content = req.body.content;
+//                 post.isPublic = req.body.isPublic;
+//                 // post.likes = req.body.likes;
+//                 // post.dislikes = req.body.dislikes;
+//                 post.usersLikes.push(req.body._id);
+//                 post.updatedAt = Date.now();
 
-                post.save()
-                    .then((updatedPost) => {
-                        return res.status(200).send({ message: 'Post updated', updatedPost });
-                    })
-                    .catch((err) => {
-                        return res.status(500).send({ message: err.message });
-                    });
-            } else {
-                return res.status(404).send({ message: 'Post not found' });
-            }
-        })
+//                 post.save()
+//                     .then((updatedPost) => {
+//                         return res.status(200).send({ message: 'Post updated', updatedPost });
+//                     })
+//                     .catch((err) => {
+//                         return res.status(500).send({ message: err.message });
+//                     });
+//             } else {
+//                 return res.status(404).send({ message: 'Post not found' });
+//             }
+//         })
+// });
+// add like Post
+app.patch('/posts/:id/like/:uid', authenticateToken ,async (req, res) => {
+    const post = await Post.findById(req.params.id);
+    const user = await User.findById(req.params.uid);
+
+    if (post && user) {
+        console.log(post)
+        console.log(user)
+        if (post.usersLikes.includes(user._id)) {
+            return res.status(400).send({ message: 'Already liked' });
+        } else {
+            console.log('Like added');
+            post.likes += 1;
+            post.usersLikes.push(user._id);
+            post.updatedAt = Date.now();
+            post.save();
+            return res.status(200).send({ message: 'Like added', post });
+        }
+    } else {
+        return res.status(404).send({ message: 'Post or User not found' });
+    }
+
+
 });
-
-app.patch('/posts/:id/like', async (req, res) => {
-    await Post.findById(req.params.id)
-        .then((post) => {
-            if (post) {
-
-            post.updateOne({ 
-                $inc: { likes: 1 },
-                $push: { usersLikes: req.body.usersLikes }, 
-                updatedAt: Date.now()
-            })
-            } else {
-                return res.status(404).send({ message: 'Post not found' });
-            }
-            
-        })
-});
-
+// new Post
 app.post('/posts', async (req, res) => {
     const post = new Post(req.body);
     console.log('creation started...');
@@ -361,6 +371,22 @@ app.post('/posts', async (req, res) => {
         });
 });
 
+// get all Posts User likes
+app.get('/posts/:id/likes', authenticateToken, async (req, res) => {
+    const user = await User.findById(req.params.id);
+    const allPostsLiked = await Post.find({ usersLikes: { $in: user._id }});
+    console.log(allPostsLiked);
+    console.log(allPostsLiked.length);
+    if (allPostsLiked) {
+        return res.status(200).send({ allPostsLiked });
+    } else {
+        return res.status(404).send({ message: 'Posts not found' });
+    }
+});
+
+// get all Posts User created
+
+// get all Posts User dislikes
 
 
 // Friends 2 approach
@@ -370,74 +396,6 @@ app.get('/users/:id/friends', async (req, res) => {
 
 
 
-// testes
-// const Product = require('./models/product');
-app.post('/products', async (req, res) => {
-    const product = new Product(req.body);
-    console.log('creation started...');
-
-    await product.save()
-        .then((newProduct) => {
-            console.log(newProduct)
-            return res.status(201).send({ message: 'New product created', newProduct });
-        })
-        .catch((err) => {
-            console.log(err);
-            return res.status(500).send({ message: err.message });
-        });
-});
-
-app.get('/products', async (req, res) => {
-    await Product.find()
-        .then((products) => {
-            return res.status(200).send({ products });
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
-});
-
-app.get('/products/:id', async (req, res) => {
-    await Product.findById(req.params.id)
-        .then((product) => {
-            if (product) {
-                return res.status(200).send({ product });
-            } else {
-                return res.status(404).send({ message: 'Product not found' });
-            }
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
-});
-
-app.put('/products/:id', async (req, res) => {
-    Product.findByIdAndUpdate(req.params.id, req.body, { new: true })
-        .then((product) => {
-            if (product) {
-                return res.status(200).send({ product });
-            } else {
-                return res.status(404).send({ message: 'Product not found' });
-            }
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
-});
-
-app.delete('/products/:id', async (req, res) => {
-    Product.findByIdAndDelete(req.params.id)
-        .then((product) => {
-            if (product) {
-                return res.status(200).send({ message: 'Product deleted' });
-            } else {
-                return res.status(404).send({ message: 'Product not found' });
-            }
-        })
-        .catch((err) => {
-            return res.status(500).send({ message: err.message });
-        });
-});
 
 app.listen(port, () => {
     console.log(`App listening at http://localhost:${port}`);

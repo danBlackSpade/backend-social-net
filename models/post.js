@@ -30,7 +30,7 @@ const postSchema = new mongoose.Schema({
         default: 0
     },
     usersLikes: {
-        type: [mongoose.Schema.Types.UUID],
+        type: [mongoose.Schema.Types.ObjectId],
         ref: 'User'       
     },
 
